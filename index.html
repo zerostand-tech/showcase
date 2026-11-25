@@ -15,6 +15,9 @@ a{color:inherit;text-decoration:none}
 header{position:fixed;inset:0 0 auto 0;z-index:20;display:flex;align-items:center;gap:20px;padding:14px 4vw;background:linear-gradient(#000c,#0000);transition:background .3s}
 header.solid{background:#0b0b0ff2}
 .logo{font-weight:900;font-size:20px;letter-spacing:.02em;color:var(--accent);white-space:nowrap}
+.logo{display:flex;align-items:center;gap:10px}
+.logo img{height:30px;display:block;filter:invert(1)}   /* 검정 CI를 어두운 배경에서 흰색으로 표시 */
+.logo span{color:var(--text);font-size:17px;font-weight:700;letter-spacing:0}
 .chips{display:flex;gap:6px}
 .chip{background:none;border:0;padding:6px 10px;border-radius:99px;color:var(--mute);cursor:pointer;font-size:14px}
 .chip.on{color:var(--text);font-weight:700;background:#ffffff1a}
@@ -67,6 +70,7 @@ main.flat{margin-top:0;padding-top:90px}
 .card .art{aspect-ratio:16/9}
 .card-info{padding:9px 11px 11px}
 .card-info b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.by{display:block;font-size:12px;color:var(--mute);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
 .badge{font-size:10.5px;border:1px solid #ffffff40;border-radius:3px;padding:1px 5px;color:#d0d0d8}
 .empty{padding:120px 4vw;text-align:center;color:var(--mute)}
@@ -118,12 +122,12 @@ footer .apply:hover{border-color:var(--text)}
 .spin{width:38px;height:38px;border:4px solid #fff3;border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
 .demo-flag{position:fixed;left:12px;bottom:12px;z-index:30;background:#000c;border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--mute)}
-@media(max-width:640px){header{gap:10px}.chips .chip{padding:6px 7px;font-size:13px}.logo{font-size:17px}}
+@media(max-width:640px){header{gap:10px}.chips .chip{padding:6px 7px;font-size:13px}.logo img{height:24px}.logo span{display:none}}
 </style>
 </head>
 <body>
 <header id="header">
-  <div class="logo" id="logo">ALT9 Game Showcase</div>
+  <a class="logo" href="./" aria-label="ALT9 Game Showcase"><img src="assets/alt9-ci.png" alt="Alt9"><span id="logo">Game Showcase</span></a>
   <div class="chips" id="chips"></div>
   <div class="spacer"></div>
   <input class="search" id="search" type="text" placeholder="프로젝트 검색" aria-label="프로젝트 검색">
@@ -151,12 +155,12 @@ const PLATFORMS = {
 };
 
 const DEMO = { site: { title: 'ALT9 Game Showcase', footer: '샘플 데이터' }, projects: [
-  { id:'d1', title:'픽셀 던전', tagline:'퇴근 후 30분, 한 판으로 끝나는 로그라이크', description:'매번 새로 만들어지는 던전을 탐험하는 2D 로그라이크 게임입니다.\n\n· 무작위 맵 생성\n· 40종 이상의 아이템\n· 게임패드 지원', category:'게임', tags:['Godot','2D'], version:'1.2.0', updated:'2026-11-20', featured:true, downloads:[{platform:'windows',url:'#',size:48200000},{platform:'android',url:'#',size:39100000}] },
-  { id:'d2', title:'회의록 요약기', tagline:'녹음 파일을 넣으면 요약이 나옵니다', description:'회의 녹음을 텍스트로 바꾸고 핵심만 정리해 주는 데스크톱 도구.', category:'업무 도구', tags:['Python'], version:'0.9.1', updated:'2026-11-12', downloads:[{platform:'windows',url:'#',size:22500000}] },
-  { id:'d3', title:'점심 룰렛', tagline:'오늘 뭐 먹지? 고민 끝', description:'주변 식당 목록에서 오늘의 점심을 뽑아 주는 앱.', category:'생활', tags:['Flutter'], version:'2.0.3', updated:'2026-10-30', downloads:[{platform:'android',url:'#',size:14800000}] },
-  { id:'d4', title:'스프라이트 패커', tagline:'이미지 여러 장을 아틀라스 한 장으로', description:'드래그 앤 드롭으로 스프라이트 시트를 만드는 도구.', category:'업무 도구', tags:['C#'], version:'1.0.0', updated:'2026-10-11', downloads:[{platform:'windows',url:'#',size:8900000}] },
-  { id:'d5', title:'주식 타이쿤', tagline:'가상의 시장에서 투자 감각 키우기', description:'가상 종목으로 즐기는 경제 시뮬레이션 게임.', category:'게임', tags:['Unity'], version:'0.5.0', updated:'2026-09-25', downloads:[{platform:'windows',url:'#',size:61000000},{platform:'android',url:'#',size:52000000}] },
-  { id:'d6', title:'스탠드업 타이머', tagline:'데일리 미팅을 15분 안에', description:'발언자별 시간을 재 주는 간단한 타이머.', category:'생활', tags:['Kotlin'], version:'1.1.0', updated:'2026-09-02', downloads:[{platform:'android',url:'#',size:6200000}] },
+  { id:'d1', author:'제작자 A', title:'픽셀 던전', tagline:'퇴근 후 30분, 한 판으로 끝나는 로그라이크', description:'매번 새로 만들어지는 던전을 탐험하는 2D 로그라이크 게임입니다.\n\n· 무작위 맵 생성\n· 40종 이상의 아이템\n· 게임패드 지원', category:'게임', tags:['Godot','2D'], version:'1.2.0', updated:'2026-11-20', featured:true, downloads:[{platform:'windows',url:'#',size:48200000},{platform:'android',url:'#',size:39100000}] },
+  { id:'d2', author:'제작자 B', title:'회의록 요약기', tagline:'녹음 파일을 넣으면 요약이 나옵니다', description:'회의 녹음을 텍스트로 바꾸고 핵심만 정리해 주는 데스크톱 도구.', category:'업무 도구', tags:['Python'], version:'0.9.1', updated:'2026-11-12', downloads:[{platform:'windows',url:'#',size:22500000}] },
+  { id:'d3', author:'제작자 C', title:'점심 룰렛', tagline:'오늘 뭐 먹지? 고민 끝', description:'주변 식당 목록에서 오늘의 점심을 뽑아 주는 앱.', category:'생활', tags:['Flutter'], version:'2.0.3', updated:'2026-10-30', downloads:[{platform:'android',url:'#',size:14800000}] },
+  { id:'d4', author:'제작자 B', title:'스프라이트 패커', tagline:'이미지 여러 장을 아틀라스 한 장으로', description:'드래그 앤 드롭으로 스프라이트 시트를 만드는 도구.', category:'업무 도구', tags:['C#'], version:'1.0.0', updated:'2026-10-11', downloads:[{platform:'windows',url:'#',size:8900000}] },
+  { id:'d5', author:'제작자 A', title:'주식 타이쿤', tagline:'가상의 시장에서 투자 감각 키우기', description:'가상 종목으로 즐기는 경제 시뮬레이션 게임.', category:'게임', tags:['Unity'], version:'0.5.0', updated:'2026-09-25', downloads:[{platform:'windows',url:'#',size:61000000},{platform:'android',url:'#',size:52000000}] },
+  { id:'d6', author:'제작자 D', title:'스탠드업 타이머', tagline:'데일리 미팅을 15분 안에', description:'발언자별 시간을 재 주는 간단한 타이머.', category:'생활', tags:['Kotlin'], version:'1.1.0', updated:'2026-09-02', downloads:[{platform:'android',url:'#',size:6200000}] },
 ]};
 
 /* ───────── 상태 ───────── */
@@ -221,7 +225,7 @@ function downloadButtons(p, cls) {
 /* ───────── 화면 그리기 ───────── */
 function render() {
   const title = (data.site && data.site.title) || 'ALT9 Game Showcase';
-  $('logo').textContent = title; document.title = title;
+  $('logo').textContent = title.replace(/^alt9\s*/i, ''); document.title = title;
   $('foot').textContent = (data.site && data.site.footer) || `© ${new Date().getFullYear()} ${title}`;
   $('demoFlag')?.remove();
   if (isDemo) document.body.append(h('div', { class: 'demo-flag', id: 'demoFlag' }, '미리보기: 샘플 데이터 표시 중'));
@@ -241,7 +245,7 @@ function render() {
   const filtering = q || view.plat !== 'all';
   const list = all.filter(p =>
     (view.plat === 'all' || (p.downloads || []).some(d => d.platform === view.plat)) &&
-    (!q || [p.title, p.tagline, p.category, ...(p.tags || [])].join(' ').toLowerCase().includes(q)));
+    (!q || [p.title, p.author, p.tagline, p.category, ...(p.tags || [])].join(' ').toLowerCase().includes(q)));
 
   const hero = $('hero'), main = $('main');
   main.className = '';
@@ -266,6 +270,7 @@ function render() {
     h('div', { class: 'hero-body' },
       h('div', { class: 'hero-kicker' }, (top.category || 'FEATURED').toUpperCase()),
       h('h1', null, top.title),
+      top.author && h('div', { style: 'color:#c8c8d2;font-size:14px;margin:-4px 0 12px' }, '제작 ' + top.author),
       top.tagline && h('p', null, top.tagline),
       h('div', { class: 'actions' }, downloadButtons(top, 'primary').slice(0, 2),
         h('button', { class: 'btn', type: 'button', onclick: () => openDetail(top) }, 'ⓘ 상세 정보')))));
@@ -286,6 +291,7 @@ function card(p) {
   return h('button', { class: 'card', type: 'button', onclick: () => openDetail(p) },
     art(p, p.thumb),
     h('div', { class: 'card-info' }, h('b', null, p.title),
+      p.author && h('span', { class: 'by' }, p.author),
       h('div', { class: 'badges' },
         (p.downloads || []).map(d => h('span', { class: 'badge' }, (PLATFORMS[d.platform] || {}).label || d.platform)),
         p.version && h('span', { class: 'badge' }, 'v' + p.version))));
@@ -307,6 +313,7 @@ function openDetail(p) {
     h('div', { class: 'm-body' },
       h('h2', null, p.title),
       h('div', { class: 'meta' },
+        p.author && h('span', { style: 'color:var(--text);font-weight:600' }, '제작 ' + p.author),
         p.version && h('span', { class: 'v' }, 'v' + p.version),
         p.updated && h('span', null, '업데이트 ' + p.updated),
         p.category && h('span', null, p.category)),
@@ -440,6 +447,7 @@ function openEditor(p) {
   f.innerHTML = `
     <h2>${p ? '프로젝트 수정' : '새 프로젝트'}</h2>
     <label for="et">제목 *</label><input id="et" name="title" type="text" required maxlength="60">
+    <label for="eb">제작자</label><input id="eb" name="author" type="text" maxlength="40" placeholder="이름 또는 팀명">
     <label for="eg">한 줄 소개</label><input id="eg" name="tagline" type="text" maxlength="120">
     <label for="ed">설명</label><textarea id="ed" name="description"></textarea>
     <div class="two">
@@ -466,7 +474,7 @@ function openEditor(p) {
     <div class="form-foot"><button class="btn ghost" type="button" id="cancel">취소</button><button class="btn accent" type="submit">저장</button></div>`;
   cats.forEach(c => f.querySelector('#catList').append(h('option', { value: c })));
   if (p) {
-    for (const k of ['title', 'tagline', 'description', 'category', 'version']) f.elements[k].value = p[k] || '';
+    for (const k of ['title', 'author', 'tagline', 'description', 'category', 'version']) f.elements[k].value = p[k] || '';
     f.elements.tags.value = (p.tags || []).join(', '); f.elements.featured.checked = !!p.featured;
     f.querySelector('#clearWrap').hidden = !(p.screenshots || []).length;
     for (const d of p.downloads || []) if (f.elements[d.platform + 'Url']) f.elements[d.platform + 'Url'].value = d.url;
@@ -490,7 +498,7 @@ async function saveProject(f, orig) {
   const p = orig ? JSON.parse(JSON.stringify(orig)) : { id: 'p' + Date.now().toString(36) };
   const stamp = Date.now().toString(36), dir = `files/${p.id}`;
   Object.assign(p, {
-    title: f.elements.title.value.trim(), tagline: f.elements.tagline.value.trim(), description: f.elements.description.value.trim(),
+    title: f.elements.title.value.trim(), author: f.elements.author.value.trim(), tagline: f.elements.tagline.value.trim(), description: f.elements.description.value.trim(),
     category: f.elements.category.value.trim() || '기타', version: f.elements.version.value.trim().replace(/^v/i, ''),
     tags: f.elements.tags.value.split(',').map(s => s.trim()).filter(Boolean), featured: f.elements.featured.checked, updated: today(),
   });
