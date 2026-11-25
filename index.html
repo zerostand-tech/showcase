@@ -170,7 +170,9 @@ footer .apply:hover{border-color:var(--text)}
    GitHub Pages(https://계정.github.io/저장소/)에 올리면 owner/repo는 자동 인식됩니다.
    커스텀 도메인을 쓰는 경우에만 직접 채워 주세요. */
 const CONFIG = { owner: 'zerostand-tech', repo: 'showcase', branch: 'main',
-  // 좋아요·댓글·설치 수 저장소(Supabase). 두 값을 채우면 기능이 켜집니다. 설정법은 README 참고
+  // 좋아요·설치 수: 가입 없는 공개 카운터(abacus.jasoncameron.dev)에 이 이름으로 숫자만 저장합니다. 비우면 기능이 꺼집니다
+  counterNamespace: 'alt9-gameshowcase',
+  // (선택) Supabase 두 값을 채우면 카운터 대신 Supabase를 쓰고 댓글 기능까지 켜집니다. 설정법은 README 참고
   supabaseUrl: '', supabaseKey: '' };
 const CONTACT = { team: '사업팀', name: '김영서', email: 'zerostand@alt9.co.kr' };   // 등록 신청 문의처
 const MAX_UPLOAD_MB = 50;   // 사이트에서 직접 올릴 수 있는 설치 파일 최대 크기
@@ -250,7 +252,18 @@ function downloadButtons(p, cls) {
 }
 
 /* ───────── 좋아요 · 댓글 · 설치 수 (Supabase) ───────── */
-const SOCIAL = !!(CONFIG.supabaseUrl && CONFIG.supabaseKey);
+const SB = !!(CONFIG.supabaseUrl && CONFIG.supabaseKey);      // 좋아요 + 댓글 + 설치 수
+const COUNTER = !SB && !!CONFIG.counterNamespace;             // 좋아요 + 설치 수 (댓글 없음, 좋아요 취소 불가)
+const SOCIAL = SB || COUNTER;
+const COUNTER_API = 'https://abacus.jasoncameron.dev';
+const counterUrl = (op, id, kind) => `${COUNTER_API}/${op}/${encodeURIComponent(CONFIG.counterNamespace)}/${encodeURIComponent(id + '-' + kind)}`;
+async function counter(op, id, kind, opt) {   // 없는 카운터는 0으로 취급
+  const r = await fetch(counterUrl(op, id, kind), opt);
+  if (r.status === 404) return 0;
+  if (!r.ok) throw new Error('카운터 요청 실패 (' + r.status + ')');
+  return Number((await r.json()).value) || 0;
+}
+const sleep = ms => new Promise(ok => setTimeout(ok, ms));
 let stats = {}, dirty = false, lastComment = 0;
 const local = {
   get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
@@ -270,20 +283,31 @@ async function sb(path, opt = {}) {
   return r.status === 204 ? null : r.json().catch(() => null);
 }
 async function loadStats() {
-  if (!SOCIAL) return;
+  if (!SOCIAL || isDemo) return;
+  if (COUNTER) {
+    // 카운터 서비스는 10초에 30번까지만 받아 주므로, 프로젝트가 많으면 나눠서 불러옴
+    const jobs = (data.projects || []).flatMap(p => [[p.id, 'likes'], [p.id, 'installs']]);
+    for (let i = 0; i < jobs.length; i += 24) {
+      if (i) await sleep(10500);
+      await Promise.all(jobs.slice(i, i + 24).map(async ([id, kind]) => { try { stat(id)[kind] = await counter('get', id, kind); } catch (e) { console.warn(e); } }));
+      if (i + 24 < jobs.length && !$('layer').firstChild) render();
+    }
+    return;
+  }
   try { const rows = await sb('project_stats?select=*'); stats = {}; for (const s of rows) stats[s.project_id] = s; } catch (e) { console.warn(e); }
 }
 const isWebOnly = p => (p.downloads || []).length > 0 && p.downloads.every(d => d.platform === 'web');
 function statLine(p) {
   if (!SOCIAL) return null;
   const s = stat(p.id);
-  return h('div', { class: 'stats' }, h('span', null, '♥ ' + s.likes), h('span', null, '댓글 ' + s.comments), h('span', null, (isWebOnly(p) ? '플레이 ' : '설치 ') + s.installs));
+  return h('div', { class: 'stats' }, h('span', null, '♥ ' + s.likes), SB && h('span', null, '댓글 ' + s.comments), h('span', null, (isWebOnly(p) ? '플레이 ' : '설치 ') + s.installs));
 }
 function logInstall(p, platform) {   // 설치·실행 버튼을 누른 횟수 (같은 방문에서는 1번만)
   if (!SOCIAL || isDemo) return;
   const key = `inst-${p.id}-${platform}`;
   try { if (sessionStorage.getItem(key)) return; sessionStorage.setItem(key, '1'); } catch {}
   stat(p.id).installs++; dirty = true;
+  if (COUNTER) return void fetch(counterUrl('hit', p.id, 'installs'), { keepalive: true }).catch(() => {});
   sb('installs', { method: 'POST', keepalive: true, headers: { Prefer: 'return=minimal' }, body: JSON.stringify({ project_id: p.id, platform }) }).catch(() => {});
 }
 function likeButton(p) {
@@ -291,6 +315,12 @@ function likeButton(p) {
   const paint = () => { const on = liked.has(p.id); b.classList.toggle('on', on); b.setAttribute('aria-pressed', on); b.textContent = `${on ? '♥' : '♡'} 좋아요 ${stat(p.id).likes}`; };
   b.onclick = async () => {
     b.disabled = true;
+    if (COUNTER) {   // 카운터는 올리기만 가능해서 한 번 누르면 취소할 수 없음
+      if (liked.has(p.id)) { b.disabled = false; return note('이미 좋아요를 눌렀습니다.'); }
+      try { stat(p.id).likes = await counter('hit', p.id, 'likes'); liked.add(p.id); local.set('showcase-liked', [...liked]); dirty = true; }
+      catch { note('좋아요를 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.'); }
+      b.disabled = false; return paint();
+    }
     try {
       const on = await sb('rpc/toggle_like', { method: 'POST', body: JSON.stringify({ p_project: p.id, p_device: deviceId }) });
       on ? liked.add(p.id) : liked.delete(p.id);
@@ -490,7 +520,7 @@ function openDetail(p) {
       p.description && h('div', { class: 'desc' }, p.description),
       (p.screenshots || []).length ? h('div', { class: 'shots' }, p.screenshots.map((s, i) => h('img', { src: s, alt: p.title + ' 스크린샷 ' + (i + 1), loading: 'lazy', onclick: () => openViewer(p.screenshots, i) }))) : null,
       (p.tags || []).length ? h('p', { class: 'tags' }, '태그: ' + p.tags.join(', ')) : null,
-      SOCIAL && !isDemo && commentsBox(p),
+      SB && !isDemo && commentsBox(p),
       admin && h('div', { class: 'admin-bar' },
         h('button', { class: 'btn sm', type: 'button', onclick: () => openEditor(p) }, '수정'),
         h('button', { class: 'btn sm ghost', type: 'button', onclick: () => removeProject(p) }, '삭제'))),
