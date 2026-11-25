@@ -5,6 +5,30 @@
   },
   "projects": [
     {
+      "id": "pmww265xn",
+      "title": "낚시",
+      "author": "김영서",
+      "tagline": "아재분들을 위한 아재 전용 낚시 게임입니다.",
+      "description": "",
+      "category": "게임",
+      "version": "1.0.0",
+      "tags": [],
+      "featured": true,
+      "updated": "2026-11-25",
+      "thumb": "files/pmww265xn/thumb-mww265xn.jpg",
+      "screenshots": [
+        "files/pmww265xn/shot-mww265xn-1.jpg",
+        "files/pmww265xn/shot-mww265xn-2.jpg",
+        "files/pmww265xn/shot-mww265xn-3.jpg"
+      ],
+      "downloads": [
+        {
+          "platform": "web",
+          "url": "https://github.com/zerostand-tech/showcase/releases/download/mygame-v1.0/Daemul.exe"
+        }
+      ]
+    },
+    {
       "id": "pmww10ahj",
       "title": "우리동네 주주님",
       "author": "김영서",
