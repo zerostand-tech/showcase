@@ -50,3 +50,17 @@
 
 GitHub Pages는 기본적으로 주소를 아는 누구나 볼 수 있습니다.
 사내 구성원만 보게 하려면 GitHub Enterprise Cloud의 비공개 Pages 기능이 필요합니다.
+
+## 좋아요 · 댓글 · 설치 수
+
+방문자가 남기는 데이터는 GitHub에 저장할 수 없어서 무료 데이터베이스(Supabase)를 씁니다.
+설정 전에는 이 기능들이 화면에 나타나지 않습니다.
+
+1. https://supabase.com 에서 가입하고 새 프로젝트를 만듭니다. (Region은 Seoul 권장)
+2. 왼쪽 메뉴 **SQL Editor**에 이 저장소의 `supabase.sql` 내용을 전부 붙여 넣고 **Run** 합니다.
+3. **Project Settings → API Keys**에서 **Project URL**과 **Publishable key**(`sb_publishable_...`)를 복사합니다.
+4. `index.html` 위쪽 `CONFIG`의 `supabaseUrl`, `supabaseKey`에 넣고 커밋합니다.
+
+- 좋아요는 기기(브라우저)당 1번, 설치 수는 설치·실행 버튼을 누른 횟수입니다(같은 방문에서는 1번만 셉니다).
+- 댓글은 로그인 없이 이름만 적고 남깁니다. 지우려면 Supabase 대시보드 **Table Editor → comments**에서 해당 줄을 삭제합니다.
+- Supabase 무료 플랜은 7일간 사용이 없으면 프로젝트가 일시 중지됩니다. 대시보드에서 다시 켤 수 있고, 그동안에도 사이트의 나머지 기능은 정상 동작합니다.
