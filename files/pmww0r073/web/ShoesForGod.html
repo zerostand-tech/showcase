@@ -608,13 +608,17 @@ function dayBuyers(day){const r=mul32(day*9973+7),idx=BUYERS.map((_,i)=>i),out=[
 const rl=(s,k)=>s.relics[k]||0;
 const cost=(L,s)=>L>=MAX?0:Math.max(1,Math.round((L?14*Math.pow(1.48,L):10)*(1-.03*rl(s,'bellows'))*(setDone(s,0)?.98:1)*genUp(s).cost));
 const value=(L,s)=>Math.round((L?24*Math.pow(1.74,L):8)*(1+.05*rl(s,'scale')+(setDone(s,1)?.03:0)+(setDone(s,5)?.1:0)+genUp(s).val));   // 시세
+// 감가상각: 신발을 들고 날을 넘길 때마다 시세가 10%씩 깎인다(복리, 최저 40%). 좋은 손님이 올 때까지 날짜만 넘기는 것을 막는다
+const DEP=.10, DEP_MIN=.4;
+const depMul=s=>Math.max(DEP_MIN,Math.pow(1-DEP,s.age||0));
+const worth=s=>Math.max(1,Math.round(value(s.level,s)*depMul(s)));      // 지금 들고 있는 신발의 실제 시세
 const feverLen=s=>FEVER_LEN+rl(s,'censer')+(setDone(s,4)?1:0);
 const feverAt=k=>Math.max(FEVER_MIN,FEVER_UP-FEVER_STEP*k);                                   // 피버 타임 k번째(0부터) 강화의 보너스
 const feverUp=s=>s.tranceLeft>0?feverAt(Math.max(0,(s.tranceMax||s.tranceLeft)-s.tranceLeft)):0;   // 지금 강화에 붙는 보너스
 const charmNeed=L=>L<15?1:L<17?2:L<19?3:5;
 const shardBase=L=>Math.round(L*1.5+(L-12)*3);
 const newState=()=>({v:1,gold:500,shards:0,level:0,pity:0,gauge:0,tranceLeft:0,
- inv:{whet:3,moss:1,breath:0,dust:1,charm:1},relics:{},rec:{},bk:{},dex:{},gen:0,tranceMax:0,day:1,ci:0,neg:null,gneg:null,godGone:0,vip:null,back:null,drops:0,dropL:0,ads:{day:1,whet:0,vip:0},max:0,sel:null,dust:false,mute:false,
+ inv:{whet:3,moss:1,breath:0,dust:1,charm:1},relics:{},rec:{},bk:{},dex:{},gen:0,age:0,tranceMax:0,day:1,ci:0,neg:null,gneg:null,godGone:0,vip:null,back:null,drops:0,dropL:0,ads:{day:1,whet:0,vip:0},max:0,sel:null,dust:false,mute:false,
  broken:null,cnt:null,stats:{strikes:0,success:0,destroyed:0,sold:0,earned:0,best:0,god:0}});
 function odds(s){
  const L=s.level; if(L>=MAX) return {p:0,k:0,dn:0,x:0};
@@ -654,12 +658,12 @@ function strike(s,rnd=Math.random){
  res.to=s.level; return res;
 }
 function revive(s){const n=charmNeed(s.broken.level); if(s.inv.charm<n) return false; s.inv.charm-=n; s.broken=null; return true;}
-function collect(s){const g=s.broken.shards; s.shards+=g; s.level=0; s.broken=null; return g;}
+function collect(s){const g=s.broken.shards; s.shards+=g; s.level=0; s.age=0; s.broken=null; return g;}
 
 /* ---- 협상 ---- */
 // 지금 손님과의 협상 상태. 손님이 낼 수 있는 최대 금액(한도) = 시세 × 손님 배율, 제시액 = 한도 × 진행 비율
 // kind: 'god'(+20 신발은 신만 산다) / 'vip'(광고로 부른 특별 손님) / 'buyer'(오늘의 손님)
-function deal(s){ const base=value(s.level,s);
+function deal(s){ const base=worth(s);
  const view=(b,kind,mult,n,key)=>{const cap=Math.max(1,Math.round(base*mult)); bkOf(s,key).met=1;
   return {b,kind,key,base,cap,n,offer:Math.max(1,Math.round(cap*n.ratio)),pat:n.pat,maxPat:b.pat+(n.bonus?1:0),atCap:n.ratio>=.999};};
  if(s.level>=MAX){ if(s.godGone===s.day) return {kind:'god',away:true,b:GOD};
@@ -684,11 +688,11 @@ function haggle(s,big,rnd=Math.random){ const d=deal(s); if(!d.n) return null;
 function sellTo(s){ const d=deal(s); if(!d.n) return null; const bk=bkOf(s,d.key), L=s.level, rc=recL(s,L), g=gradeOf(L), dexNew=!s.dex[L], setWas=setDone(s,g); bk.sold++; if(d.offer>bk.best) bk.best=d.offer; rc.sold++; if(d.offer>rc.best){rc.best=d.offer;rc.by=d.b.n;}
  s.gold+=d.offer; s.stats.sold++; s.stats.earned+=d.offer; if(d.offer>(s.stats.best||0)) s.stats.best=d.offer;
  if(d.kind==='god'){ s.stats.god=(s.stats.god||0)+1; s.gneg=null; } else if(d.kind==='vip') s.vip.on=false; else { s.ci++; s.neg=null; }
- s.dex[L]=1;                                        // 팔아야 도감에 올라간다
+ s.age=0; s.dex[L]=1;                                        // 팔아야 도감에 올라간다
  s.level=0; s.pity=0; s.cnt=null; s.back=null;
  return {gold:d.offer,line:d.b.ok,pct:d.offer/d.base,kind:d.kind,L,dexNew,setNew:!setWas&&setDone(s,g)?g:-1,full:dexNew&&dexFull(s)}; }
 function passBuyer(s){ const d=deal(s); if(!d.n) return null; if(d.kind==='god') return {line:'천천히 고민하거라. 나는 이천 년도 기다렸다.',stay:true}; leave(s,d,false); return {line:d.b.bye}; }
-function nextDay(s){ s.day++; s.ci=0; s.neg=null; s.vip=null; s.back=null; }
+function nextDay(s){ s.age=s.level>0?(s.age||0)+1:0; s.day++; s.ci=0; s.neg=null; s.vip=null; s.back=null; }
 
 /* ---- 보상형 광고로 받는 것 (광고 재생 자체는 화면 쪽에서 처리) ---- */
 function ads(s){ if(!s.ads||s.ads.day!==s.day) s.ads={day:s.day,whet:0,vip:0}; return s.ads; }
@@ -706,7 +710,7 @@ function adVip(s,rnd=Math.random){ if(!canVip(s)) return false; ads(s).vip++; s.
 // 유물 제단: +10 이상 신발을 바치면 플링코 판에 떨어뜨릴 기회를 얻는다. 떨어진 칸의 유물이 한 단계 오른다
 const SLOTS=['bag','hammer','censer','scale','anvil','bellows'];   // 판 아래 여섯 칸. 어디서 떨어뜨리고 언제 튕기느냐로 노릴 수 있다
 function altarStart(s){ if(s.level<10) return 0; const n=s.level>=18?3:s.level>=15?2:1;
- s.drops=(s.drops||0)+n; s.dropL=s.level; s.level=0; s.pity=0; s.cnt=null; return n; }
+ s.drops=(s.drops||0)+n; s.dropL=s.level; s.level=0; s.age=0; s.pity=0; s.cnt=null; return n; }
 function relicDrop(s,slot){ if(!(s.drops>0)) return null; s.drops--; const k=SLOTS[Math.max(0,Math.min(SLOTS.length-1,slot))];
  if(rl(s,k)<RELICS[k].max){ s.relics[k]=rl(s,k)+1; return {k,lv:s.relics[k]}; }
  s.shards+=20; return {k,full:true,shards:20}; }      // 이미 최고 레벨이면 조각 20개로 돌려준다
@@ -714,7 +718,7 @@ function buy(s,id,n=1){const m=MATS[id]; if(s.gold<m.price*n) return false; s.go
 function craft(s,id){const c=CRAFT.find(x=>x.id===id); if(s.shards<c.cost) return false;
  if(c.stone){ if(s.level>=c.stone) return false; s.level=c.stone; s.pity=0; s.cnt=null; if(s.max<c.stone) s.max=c.stone; const rc=recL(s,c.stone); rc.made++; if(!rc.first) rc.first=s.day; } else s.inv[c.mat]++;
  s.shards-=c.cost; return true;}
-return {GRADES,gradeOf,setDone,inDex,dexCount,dexFull,dexClear,GEN,genUp,feverUp,feverAt,FEVER_STEP,FEVER_MIN,DESC,recL,bkOf,feverLen,TIERS,MAX,SAFE,RATE,DESTROY,MATS,RELICS,CRAFT,BUYERS,GOD,VIP,PER_DAY,AD_WHET,adLeft,adWhet,adPatience,canRetry,adRetry,canVip,adVip,dayBuyers,cost,value,charmNeed,newState,odds,strike,revive,collect,
+return {DEP,DEP_MIN,depMul,worth,GRADES,gradeOf,setDone,inDex,dexCount,dexFull,dexClear,GEN,genUp,feverUp,feverAt,FEVER_STEP,FEVER_MIN,DESC,recL,bkOf,feverLen,TIERS,MAX,SAFE,RATE,DESTROY,MATS,RELICS,CRAFT,BUYERS,GOD,VIP,PER_DAY,AD_WHET,adLeft,adWhet,adPatience,canRetry,adRetry,canVip,adVip,dayBuyers,cost,value,charmNeed,newState,odds,strike,revive,collect,
  deal,haggle,sellTo,passBuyer,nextDay,altarStart,relicDrop,SLOTS,FEVER_UP,FEVER_LEN,buy,craft,rl};
 })();
 if(typeof module!=='undefined') module.exports=G;
@@ -885,12 +889,12 @@ addEventListener('resize',fit);
 /* ================= 화면 그리기 ================= */
 const MKEYS=['whet','moss','breath','dust','charm'];
 function render(){
-  const L=S.level, o=G.odds(S), c=G.cost(L,S), v=G.value(L,S), max=L>=G.MAX;
+  const L=S.level, o=G.odds(S), c=G.cost(L,S), v=G.worth(S), max=L>=G.MAX, dep=Math.round((1-G.depMul(S))*100);
   $('gold').textContent=fmt(S.gold); $('shards').textContent=fmt(S.shards);
   const cn=S.cnt||{g:0,s:0,f:0}; $('cntG').textContent=cn.g; $('cntS').textContent=cn.s; $('cntF').textContent=cn.f;
   if(shownLevel!==L){$('stone').innerHTML=stoneSVG(L);shownLevel=L;}
   $('lv').textContent='+'+L; $('nm').textContent=G.TIERS[L][0];
-  $('val').textContent=`시세 ${fmt(v)} G`+(S.pity?` · 기운 +${S.pity}%p`:'');
+  $('val').innerHTML=`시세 ${fmt(v)} G`+(dep?` <span style="color:#e39240">▼${dep}%</span>`:'')+(S.pity?` · 기운 +${S.pity}%p`:'');
   const z=$('zone');
   if(max){z.className='trance';z.innerHTML='최종 단계 도달';}
   else if(o.tr){z.className='trance';z.innerHTML=ic('censer',12)+'피버 타임 · 성공 확률 +'+G.feverUp(S)+'%p'+(L>=G.SAFE?' · 터질 수 있음':'');}
@@ -1003,7 +1007,7 @@ const SHEETS={
    b1('바치기',n?'플링코 '+n+'번':'','altar',{dis:!n})];},
  info:()=>['게임 정보',`<div class="popBody"><h5 style="margin-top:0">확률표</h5><table class="num"><tr><th>단계</th><th>성공</th><th>터짐</th><th>비용</th><th>시세</th></tr>`+
    G.RATE.map((p,i)=>`<tr><td>+${i}→${i+1}</td><td>${p}%</td><td>${i<G.SAFE?'안전':Math.round(G.DESTROY[i]*100)+'%'}</td><td>${fmt(G.cost(i,S))}</td><td>${fmt(G.value(i+1,S))}</td></tr>`).join('')+`</table>
-   <h5>규칙</h5><div class="note" style="text-align:left;padding:0 2px">· '터짐'은 실패했을 때 신발이 터질 확률입니다. +13까지는 실패해도 그대로 유지됩니다<br>· 성공 확률은 전부 더합니다: 기본 + 재료 + 장인의 기운 + 유물 + 세트 보상 + 피버 타임<br>· 장인의 기운: 실패할 때마다 다음 성공 확률 +2%p(위험 구간 +1%p), 최대 +20%p<br>· 피버 타임: 게이지 100에서 ${G.feverLen(S)}회. 성공 확률 +${G.FEVER_UP}%p에서 시작해 강화할 때마다 ${G.FEVER_STEP}%p씩 줄어듭니다(최소 +${G.FEVER_MIN}%p)<br>· 회차 보너스: 도감을 한 번 비울 때마다 성공 확률 +${G.GEN.p}%p(최대 +${G.GEN.pMax}%p), 강화 비용 -${G.GEN.cost*100}%, 시세 +${G.GEN.val*100}%, 강화 컷씬 속도 +${G.GEN.spd*100}%(최대 ${G.GEN.spdMax}배)<br>· 위험 구간의 성공 확률은 최대 92%입니다<br>· +20 신발은 신에게만 바칠 수 있습니다</div>
+   <h5>규칙</h5><div class="note" style="text-align:left;padding:0 2px">· '터짐'은 실패했을 때 신발이 터질 확률입니다. +13까지는 실패해도 그대로 유지됩니다<br>· 성공 확률은 전부 더합니다: 기본 + 재료 + 장인의 기운 + 유물 + 세트 보상 + 피버 타임<br>· 장인의 기운: 실패할 때마다 다음 성공 확률 +2%p(위험 구간 +1%p), 최대 +20%p<br>· 피버 타임: 게이지 100에서 ${G.feverLen(S)}회. 성공 확률 +${G.FEVER_UP}%p에서 시작해 강화할 때마다 ${G.FEVER_STEP}%p씩 줄어듭니다(최소 +${G.FEVER_MIN}%p)<br>· 회차 보너스: 도감을 한 번 비울 때마다 성공 확률 +${G.GEN.p}%p(최대 +${G.GEN.pMax}%p), 강화 비용 -${G.GEN.cost*100}%, 시세 +${G.GEN.val*100}%, 강화 컷씬 속도 +${G.GEN.spd*100}%(최대 ${G.GEN.spdMax}배)<br>· 감가상각: 신발을 들고 날을 넘길 때마다 시세가 ${G.DEP*100}%씩 깎입니다(최저 ${G.DEP_MIN*100}%). 팔거나 새 신발을 시작하면 사라집니다<br>· 위험 구간의 성공 확률은 최대 92%입니다<br>· +20 신발은 신에게만 바칠 수 있습니다</div>
    <h5>세트 보상</h5>`+G.GRADES.map((g,i)=>`<div class="it ${G.setDone(S,i)?'':'dim'}"><div class="nm" style="padding-left:6px"><span style="color:${g.c}">${g.n} 선반</span><small>+${i?G.GRADES[i-1].to+1:0} ~ +${g.to} 전부 팔아서 도감에 등록</small></div><span class="pv">${g.set}</span></div>`).join('')+`</div><div style="height:16px"></div>`,''],
  set:()=>['설정',`<div class="popBody"><div class="it">${th(S.mute?'mute':'sound')}<div class="nm">효과음<small>${S.mute?'꺼짐':'켜짐'}</small></div>${b2(S.mute?'켜기':'끄기','mute')}</div>
    <div class="it">${th('scale')}<div class="nm">게임 정보<small>확률표 · 규칙 · 세트 보상</small></div>${b2('보기','sheet',{id:'info'})}</div>
@@ -1063,7 +1067,7 @@ function drawDeal(bump){ const st=DL.state, d=st==='talk'?G.deal(S):null, k=DL.k
   const say=$('say'); say.textContent=DL.line; if(bump){say.classList.remove('pop2');void say.offsetWidth;say.classList.add('pop2');}
   $('hint').textContent=DL.hint||'';
   const L=st==='talk'?S.level:DL.L;
-  $('dealShoe').style.display=st==='done'?'none':''; if(st!=='done') $('dealShoe').innerHTML=`<div class="shoeBig ${st==='sold'?'gone':''}">${stoneSVG(L)}</div><div class="shoeNm"><b>+${L}</b> ${G.TIERS[L][0]}</div><div class="shoeSub num">${st==='sold'?(god?'신이 신고 하늘로 올라갔습니다':'손님이 신고 갔습니다'):st==='left'||st==='away'?'아직 팔리지 않았습니다':'시세 '+fmt(d.base)+' G'}</div>`;
+  $('dealShoe').style.display=st==='done'?'none':''; if(st!=='done') $('dealShoe').innerHTML=`<div class="shoeBig ${st==='sold'?'gone':''}">${stoneSVG(L)}</div><div class="shoeNm"><b>+${L}</b> ${G.TIERS[L][0]}</div><div class="shoeSub num">${st==='sold'?(god?'신이 신고 하늘로 올라갔습니다':'손님이 신고 갔습니다'):st==='left'||st==='away'?'아직 팔리지 않았습니다':'시세 '+fmt(d.base)+' G'+(S.age?` <span style="color:#e39240">· ${S.age}일 묵어서 ▼${Math.round((1-G.depMul(S))*100)}%</span>`:'')}</div>`;
   const ob=$('offerBox'); ob.style.display=st==='talk'||st==='sold'?'':'none';
   if(st==='talk'){ const p=d.offer/d.base; $('offerL').textContent=god?'신이 내리는 값':'손님이 부른 값'; const of=$('offer'); of.textContent=fmt(d.offer)+' G'; if(bump==='up'){of.classList.remove('up');void of.offsetWidth;of.classList.add('up');}
     $('offerPct').innerHTML=`시세의 <b style="color:${p>=1?'#8fd3a8':p<.8?'#e39240':'#e6e0cf'}">${Math.round(p*100)}%</b>`; }
@@ -1073,9 +1077,9 @@ function drawDeal(bump){ const st=DL.state, d=st==='talk'?G.deal(S):null, k=DL.k
       <div class="row2"><button class="btn2" data-act="dealHag" data-id="small"><span>${god?'조금만 더 주시옵소서':'조금만 더 주세요'}</span><small>+8% · 잘 통함</small></button><button class="btn2" data-act="dealHag" data-id="big"><span>${god?'크게 축복하소서':'확 올려 주세요'}</span><small>+20% · ${god?'삐질 수 있음':'화낼 수 있음'}</small></button></div>
       <button class="btn3" data-act="${god?'dealClose':'dealPass'}">${god?'조금 더 고민하기':'이 손님은 그냥 보내기'}</button>`
     : st==='left'?`${b1('다음 손님 받기','','dealNext')}${retry}<button class="btn3" data-act="dealClose">대장간으로 돌아가기</button>`
-    : st==='away'?`${retry}${b1('다음 날로','DAY '+(S.day+1),'dealDay')}<button class="btn3" data-act="dealClose">대장간으로 돌아가기</button>`
+    : st==='away'?`${retry}${S.level>0?`<div class="note" style="color:#e39240;padding:0 0 8px">날을 넘기면 들고 있는 신발의 시세가 ${G.DEP*100}% 깎입니다${S.age?' · 지금까지 ▼'+Math.round((1-G.depMul(S))*100)+'%':''}</div>`:''}${b1('다음 날로','DAY '+(S.day+1),'dealDay')}<button class="btn3" data-act="dealClose">대장간으로 돌아가기</button>`
     : st==='sold'?`${b1('확인','','dealClose')}`
-    : `${b1('다음 날로','DAY '+(S.day+1),'dealDay')}<button class="btn3" data-act="dealClose">대장간으로 돌아가기</button>`;
+    : `${S.level>0?`<div class="note" style="color:#e39240;padding:0 0 8px">날을 넘기면 들고 있는 신발의 시세가 ${G.DEP*100}% 깎입니다${S.age?' · 지금까지 ▼'+Math.round((1-G.depMul(S))*100)+'%':''}</div>`:''}${b1('다음 날로','DAY '+(S.day+1),'dealDay')}<button class="btn3" data-act="dealClose">대장간으로 돌아가기</button>`;
 }
 function closeDeal(){ DL=null; $('deal').className=''; after(); }
 
@@ -1337,7 +1341,7 @@ const ACT={
    q.forEach((m,i)=>setTimeout(()=>toast(m),i*1700)); },
  dealPass(){ const r=G.passBuyer(S); if(!r) return; save(); DL.state='left';DL.line=r.line;DL.hint='손님을 그냥 보냈습니다';beep(SFX.talk);drawDeal(true); },
  dealNext(){ beep(SFX.talk); dealNext(); },
- dealDay(){ G.nextDay(S); save(); toast('DAY '+S.day+' · 새 손님들이 찾아옵니다'); dealNext(); },
+ dealDay(){ G.nextDay(S); save(); toast('DAY '+S.day+(S.age?' · 신발이 하루 묵어서 시세 ▼'+Math.round((1-G.depMul(S))*100)+'%':' · 새 손님들이 찾아옵니다')); shownLevel=-1; render(); dealNext(); },
  dealClose:closeDeal, x(){}
 };
 document.addEventListener('click',e=>{ if(e.target.id==='sheet') return closeSheet(); const b=e.target.closest('[data-act]'); if(!b||b.disabled) return; ACT[b.dataset.act](b.dataset.id,e);});
