@@ -147,6 +147,7 @@ const MAX_UPLOAD_MB = 50;   // 사이트에서 직접 올릴 수 있는 설치 �
 const PLATFORMS = {
   windows: { label: 'Windows', ext: 'EXE', accept: '.exe,.msi,.zip' },
   android: { label: 'Android', ext: 'APK', accept: '.apk' },
+  web: { label: 'Web', ext: 'HTML', web: true },   // 브라우저에서 바로 실행되는 HTML
 };
 
 const DEMO = { site: { title: 'ALT9 Game Showcase', footer: '샘플 데이터' }, projects: [
@@ -211,6 +212,7 @@ function art(p, src, cls) {
 function downloadButtons(p, cls) {
   return (p.downloads || []).map(d => {
     const pf = PLATFORMS[d.platform] || { label: d.platform, ext: '' };
+    if (pf.web) return h('a', { class: 'btn ' + cls, href: d.url, target: '_blank', rel: 'noopener', onclick: e => { if (d.url === '#') { e.preventDefault(); note('샘플 데이터라 실제 파일은 없습니다.'); } } }, '▶ 웹에서 실행');
     return h('a', { class: 'btn ' + cls, href: d.url, download: true, onclick: e => { if (d.url === '#') { e.preventDefault(); note('샘플 데이터라 실제 파일은 없습니다.'); } } },
       `⬇ ${pf.label} 설치`, h('small', null, [pf.ext, fmtSize(d.size)].filter(Boolean).join(' · ')));
   });
@@ -451,10 +453,14 @@ function openEditor(p) {
       <label for="es">스크린샷 (여러 장 선택 가능)</label><input id="es" name="shots" type="file" accept="image/*" multiple>
       <label class="check" id="clearWrap" hidden><input type="checkbox" name="clearShots"> 기존 스크린샷 지우기</label>
     </fieldset>
-    ${Object.entries(PLATFORMS).map(([k, v]) => `
+    ${Object.entries(PLATFORMS).map(([k, v]) => v.web ? `
+    <fieldset class="box"><legend>웹 실행 파일 (HTML)</legend>
+      <label for="f_${k}">HTML 파일 올리기 (웹 빌드처럼 파일이 여러 개면 전부 함께 선택, 파일당 최대 ${MAX_UPLOAD_MB}MB)</label><input id="f_${k}" name="${k}File" type="file" multiple>
+      <label for="u_${k}">또는 실행 링크</label><input id="u_${k}" name="${k}Url" type="text" placeholder="https://...">
+    </fieldset>` : `
     <fieldset class="box"><legend>${v.label} 설치 파일 (${v.ext})</legend>
       <label for="f_${k}">파일 올리기 (최대 ${MAX_UPLOAD_MB}MB)</label><input id="f_${k}" name="${k}File" type="file" accept="${v.accept}">
-      <label for="u_${k}">또는 다운로드 링크 (GitHub Releases 등, 큰 파일용)</label><input id="u_${k}" name="${k}Url" type="url" placeholder="https://github.com/.../releases/download/...">
+      <label for="u_${k}">또는 다운로드 링크 (GitHub Releases 등, 큰 파일용)</label><input id="u_${k}" name="${k}Url" type="text" placeholder="https://github.com/.../releases/download/...">
     </fieldset>`).join('')}
     <div class="err" role="alert"></div>
     <div class="form-foot"><button class="btn ghost" type="button" id="cancel">취소</button><button class="btn accent" type="submit">저장</button></div>`;
@@ -476,9 +482,10 @@ function openEditor(p) {
 }
 async function saveProject(f, orig) {
   for (const k of Object.keys(PLATFORMS)) {
-    const file = f.elements[k + 'File'].files[0];
-    if (file && file.size > MAX_UPLOAD_MB * 1048576)
-      throw new Error(`${PLATFORMS[k].label} 파일이 ${MAX_UPLOAD_MB}MB를 넘습니다. GitHub Releases에 올린 뒤 다운로드 링크를 입력해 주세요.`);
+    const files = [...f.elements[k + 'File'].files];
+    const big = files.find(x => x.size > MAX_UPLOAD_MB * 1048576);
+    if (big) throw new Error(`${PLATFORMS[k].label} 파일(${big.name})이 ${MAX_UPLOAD_MB}MB를 넘습니다. GitHub Releases에 올린 뒤 링크를 입력해 주세요.`);
+    if (PLATFORMS[k].web && files.length && !files.some(x => /\.html?$/i.test(x.name))) throw new Error('웹 실행 파일에는 .html 파일이 하나 이상 있어야 합니다.');
   }
   const p = orig ? JSON.parse(JSON.stringify(orig)) : { id: 'p' + Date.now().toString(36) };
   const stamp = Date.now().toString(36), dir = `files/${p.id}`;
@@ -500,7 +507,15 @@ async function saveProject(f, orig) {
   const old = p.downloads || []; p.downloads = [];
   for (const k of Object.keys(PLATFORMS)) {
     const file = f.elements[k + 'File'].files[0], url = f.elements[k + 'Url'].value.trim();
-    if (file) {
+    if (file && PLATFORMS[k].web) {
+      const files = [...f.elements[k + 'File'].files]; let n = 0, total = 0;
+      for (const w of files) {   // 파일끼리 서로 참조하므로 이름을 바꾸지 않고 올림
+        busy(`웹 파일 올리는 중… (${++n}/${files.length}) ${w.name}`);
+        await putFile(`${dir}/web/${w.name}`, await fileToB64(w), `[showcase] ${p.title} 웹 파일`); total += w.size;
+      }
+      const entry = files.find(x => /^index\.html?$/i.test(x.name)) || files.find(x => /\.html?$/i.test(x.name));
+      p.downloads.push({ platform: k, url: encPath(`${dir}/web/${entry.name}`), size: total, name: entry.name });
+    } else if (file) {
       busy(`${PLATFORMS[k].label} 설치 파일 올리는 중… (${fmtSize(file.size)}, 시간이 걸릴 수 있습니다)`);
       const safe = file.name.replace(/[^A-Za-z0-9._-]+/g, '_');
       p.downloads.push({ platform: k, url: await putFile(`${dir}/${safe}`, await fileToB64(file), `[showcase] ${p.title} ${PLATFORMS[k].ext} v${p.version || ''}`), size: file.size, name: file.name });
