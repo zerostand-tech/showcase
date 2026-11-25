@@ -227,8 +227,18 @@ function downloadButtons(p, cls) {
   });
 }
 
+// 링크를 어느 칸에 넣었든 파일 확장자로 종류를 판별 (.exe → Windows, .apk → Android, .html → Web)
+function fixPlatform(d) {
+  const ext = (String(d.url).split(/[?#]/)[0].match(/\.([a-z0-9]+)$/i) || [])[1]?.toLowerCase();
+  if (ext === 'exe' || ext === 'msi') d.platform = 'windows';
+  else if (ext === 'apk') d.platform = 'android';
+  else if (ext === 'html' || ext === 'htm') d.platform = 'web';
+  return d;
+}
+
 /* ───────── 화면 그리기 ───────── */
 function render() {
+  for (const p of data.projects || []) (p.downloads || []).forEach(fixPlatform);
   const title = (data.site && data.site.title) || 'ALT9 Game Showcase';
   $('logo').textContent = title.replace(/^alt9\s*/i, ''); document.title = title;
   $('foot').textContent = (data.site && data.site.footer) || `© ${new Date().getFullYear()} ${title}`;
@@ -493,7 +503,7 @@ function openEditor(p) {
     ${Object.entries(PLATFORMS).map(([k, v]) => v.web ? `
     <fieldset class="box"><legend>웹 실행 파일 (HTML)</legend>
       <label for="f_${k}">HTML 파일 올리기 (웹 빌드처럼 파일이 여러 개면 전부 함께 선택, 파일당 최대 ${MAX_UPLOAD_MB}MB)</label><input id="f_${k}" name="${k}File" type="file" multiple>
-      <label for="u_${k}">또는 실행 링크</label><input id="u_${k}" name="${k}Url" type="text" placeholder="https://...">
+      <label for="u_${k}">또는 웹 실행 링크 (EXE·APK 링크는 아래 칸에)</label><input id="u_${k}" name="${k}Url" type="text" placeholder="https://...">
     </fieldset>` : `
     <fieldset class="box"><legend>${v.label} 설치 파일 (${v.ext})</legend>
       <label for="f_${k}">파일 올리기 (최대 ${MAX_UPLOAD_MB}MB)</label><input id="f_${k}" name="${k}File" type="file" accept="${v.accept}">
@@ -561,6 +571,7 @@ async function saveProject(f, orig) {
       p.downloads.push(prev || { platform: k, url });
     }
   }
+  p.downloads.forEach(fixPlatform);
   busy('프로젝트 목록 저장 중…');
   const { json, sha } = await getJson();
   const at = json.projects.findIndex(x => x.id === p.id);
