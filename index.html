@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ALT9 Game Showcase</title>
+<style>
+:root{--bg:#0b0b0f;--panel:#16161d;--line:#2a2a35;--text:#f2f2f5;--mute:#9a9aa8;--accent:#e5383b;--card-w:clamp(190px,22vw,300px)}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif}
+button,input,textarea,select{font:inherit;color:inherit}
+a{color:inherit;text-decoration:none}
+
+/* header */
+header{position:fixed;inset:0 0 auto 0;z-index:20;display:flex;align-items:center;gap:20px;padding:14px 4vw;background:linear-gradient(#000c,#0000);transition:background .3s}
+header.solid{background:#0b0b0ff2}
+.logo{font-weight:900;font-size:20px;letter-spacing:.02em;color:var(--accent);white-space:nowrap}
+.chips{display:flex;gap:6px}
+.chip{background:none;border:0;padding:6px 10px;border-radius:99px;color:var(--mute);cursor:pointer;font-size:14px}
+.chip.on{color:var(--text);font-weight:700;background:#ffffff1a}
+.spacer{flex:1}
+.search{background:#0009;border:1px solid var(--line);border-radius:6px;padding:7px 12px;width:min(220px,34vw);font-size:14px}
+.search:focus{outline:none;border-color:var(--text)}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:6px;padding:10px 20px;font-weight:700;font-size:15px;cursor:pointer;background:#6d6d7a99;color:#fff;transition:filter .15s;white-space:nowrap}
+.btn:hover{filter:brightness(1.15)}
+.btn.primary{background:#fff;color:#000}
+.btn.accent{background:var(--accent)}
+.btn.sm{padding:6px 12px;font-size:13px}
+.btn.ghost{background:none;border:1px solid var(--line)}
+.btn small{font-weight:500;opacity:.65}
+
+/* art (thumbnail / banner with gradient fallback) */
+.art{position:relative;overflow:hidden;background:linear-gradient(135deg,hsl(var(--hue) 60% 28%),hsl(calc(var(--hue) + 50) 65% 12%))}
+.art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.art-title{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:12px;font-weight:900;font-size:1.25em;line-height:1.2;text-shadow:0 2px 12px #0008}
+.art.has-img .art-title{display:none}
+
+/* hero */
+.hero{position:relative;height:min(78vh,720px);min-height:420px}
+.hero .art{position:absolute;inset:0}
+.hero .art-title{display:none}
+.hero::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,#0b0b0fe6 0%,#0b0b0f66 45%,#0000 70%),linear-gradient(0deg,var(--bg) 0%,#0000 35%)}
+.hero-body{position:absolute;z-index:2;left:4vw;bottom:16%;max-width:min(560px,88vw)}
+.hero-kicker{color:var(--accent);font-weight:800;letter-spacing:.2em;font-size:12px}
+.hero h1{font-size:clamp(34px,5.4vw,68px);margin:8px 0 12px;line-height:1.05;font-weight:900}
+.hero p{font-size:clamp(15px,1.4vw,19px);color:#e0e0e6;margin:0 0 22px;line-height:1.5}
+.actions{display:flex;flex-wrap:wrap;gap:10px}
+
+/* rows */
+main{position:relative;z-index:3;margin-top:-70px;padding-bottom:60px}
+main.flat{margin-top:0;padding-top:90px}
+.row{margin:0 0 34px;position:relative}
+.row h2{margin:0 4vw 10px;font-size:19px}
+.track{display:flex;gap:10px;overflow-x:auto;padding:14px 4vw;scroll-snap-type:x proximity;scrollbar-width:none}
+.track::-webkit-scrollbar{display:none}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;padding:14px 4vw}
+.arrow{position:absolute;top:44px;bottom:14px;width:4vw;min-width:28px;border:0;background:#000a;color:#fff;font-size:26px;cursor:pointer;opacity:0;transition:opacity .2s;z-index:5}
+.arrow.l{left:0}.arrow.r{right:0}
+.row:hover .arrow{opacity:1}
+@media (hover:none){.arrow{display:none}}
+
+.card{flex:0 0 var(--card-w);scroll-snap-align:start;border-radius:6px;overflow:hidden;background:var(--panel);cursor:pointer;transition:transform .22s,box-shadow .22s;border:0;padding:0;text-align:left}
+.grid .card{flex:none}
+.card:hover,.card:focus-visible{transform:scale(1.07);box-shadow:0 12px 30px #000c;z-index:4;outline:none}
+.card .art{aspect-ratio:16/9}
+.card-info{padding:9px 11px 11px}
+.card-info b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badges{display:flex;gap:5px;margin-top:6px;flex-wrap:wrap}
+.badge{font-size:10.5px;border:1px solid #ffffff40;border-radius:3px;padding:1px 5px;color:#d0d0d8}
+.empty{padding:120px 4vw;text-align:center;color:var(--mute)}
+
+/* modal */
+.veil{position:fixed;inset:0;z-index:50;background:#000b;display:flex;justify-content:center;align-items:flex-start;overflow-y:auto;padding:4vh 12px}
+.modal{background:var(--panel);border-radius:10px;width:min(860px,100%);overflow:hidden;position:relative;box-shadow:0 20px 60px #000}
+.modal .banner{aspect-ratio:16/8;font-size:28px}
+.modal .banner::after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,var(--panel),#0000 45%)}
+.x{position:absolute;top:12px;right:12px;z-index:3;width:36px;height:36px;border-radius:50%;border:0;background:#000b;color:#fff;font-size:18px;cursor:pointer}
+.m-body{padding:0 32px 30px;margin-top:-50px;position:relative;z-index:2}
+.m-body h2{font-size:32px;margin:0 0 6px}
+.meta{color:var(--mute);font-size:13.5px;display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.meta .v{color:#5fd38d;font-weight:700}
+.desc{white-space:pre-wrap;line-height:1.7;color:#dedee6;margin:20px 0}
+.shots{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px}
+.shots img{height:200px;border-radius:6px;cursor:zoom-in}
+.tags{color:var(--mute);font-size:13px}
+.admin-bar{display:flex;gap:8px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+
+/* forms */
+.form{padding:28px 32px 30px}
+.form h2{margin:0 0 4px}
+.form .hint{color:var(--mute);font-size:13px;line-height:1.6;margin:4px 0 14px}
+.form label{display:block;font-size:13px;color:var(--mute);margin:14px 0 5px}
+.form input[type=text],.form input[type=password],.form input[type=url],.form textarea{width:100%;background:#0b0b0f;border:1px solid var(--line);border-radius:6px;padding:10px 12px}
+.form input:focus,.form textarea:focus{outline:none;border-color:var(--text)}
+.form textarea{min-height:120px;resize:vertical}
+.form input[type=file]{font-size:13px;color:var(--mute)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:600px){.two{grid-template-columns:1fr}.m-body,.form{padding-left:18px;padding-right:18px}}
+.box{border:1px solid var(--line);border-radius:8px;padding:4px 14px 14px;margin-top:16px}
+.box legend{font-weight:700;font-size:14px;padding:0 6px}
+.check{display:flex!important;align-items:center;gap:8px;color:var(--text)!important}
+.form-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:24px}
+.err{color:#ff7b7b;font-size:13px;margin-top:10px;min-height:1em}
+
+footer{padding:30px 4vw 50px;color:#555563;font-size:12.5px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+footer button{background:none;border:0;color:inherit;cursor:pointer;font-size:inherit;padding:0}
+footer button:hover{color:var(--text)}
+.foot-links{display:flex;gap:18px;align-items:center}
+footer .apply{color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 14px;font-weight:700}
+footer .apply:hover{border-color:var(--text)}
+.contact{margin:18px 0 6px;padding:18px 20px;background:#0b0b0f;border:1px solid var(--line);border-radius:8px;line-height:1.9}
+.contact b{font-size:17px}
+.contact a{color:#7fb4ff;text-decoration:underline}
+.note{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);z-index:90;background:#fff;color:#000;padding:11px 20px;border-radius:8px;font-size:14px;font-weight:600;box-shadow:0 8px 30px #000a;max-width:90vw}
+.busy{position:fixed;inset:0;z-index:80;background:#000c;display:flex;flex-direction:column;gap:16px;align-items:center;justify-content:center;font-size:15px}
+.spin{width:38px;height:38px;border:4px solid #fff3;border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.demo-flag{position:fixed;left:12px;bottom:12px;z-index:30;background:#000c;border:1px solid var(--line);border-radius:6px;padding:6px 10px;font-size:12px;color:var(--mute)}
+@media(max-width:640px){header{gap:10px}.chips .chip{padding:6px 7px;font-size:13px}.logo{font-size:17px}}
+</style>
+</head>
+<body>
+<header id="header">
+  <div class="logo" id="logo">ALT9 Game Showcase</div>
+  <div class="chips" id="chips"></div>
+  <div class="spacer"></div>
+  <input class="search" id="search" type="text" placeholder="프로젝트 검색" aria-label="프로젝트 검색">
+  <span id="adminTools"></span>
+</header>
+<div id="hero"></div>
+<main id="main"></main>
+<footer>
+  <span id="foot"></span>
+  <span class="foot-links"><button id="applyBtn" class="apply" type="button">등록 신청하기</button><button id="adminBtn" type="button">관리자</button></span>
+</footer>
+<div id="layer"></div>
+
+<script>
+/* ───────── 설정 ─────────
+   GitHub Pages(https://계정.github.io/저장소/)에 올리면 owner/repo는 자동 인식됩니다.
+   커스텀 도메인을 쓰는 경우에만 직접 채워 주세요. */
+const CONFIG = { owner: '', repo: '', branch: '' };
+const CONTACT = { team: '사업팀', name: '김영서', email: 'zerostand@alt9.co.kr' };   // 등록 신청 문의처
+const MAX_UPLOAD_MB = 50;   // 사이트에서 직접 올릴 수 있는 설치 파일 최대 크기
+const PLATFORMS = {
+  windows: { label: 'Windows', ext: 'EXE', accept: '.exe,.msi,.zip' },
+  android: { label: 'Android', ext: 'APK', accept: '.apk' },
+};
+
+const DEMO = { site: { title: 'ALT9 Game Showcase', footer: '샘플 데이터' }, projects: [
+  { id:'d1', title:'픽셀 던전', tagline:'퇴근 후 30분, 한 판으로 끝나는 로그라이크', description:'매번 새로 만들어지는 던전을 탐험하는 2D 로그라이크 게임입니다.\n\n· 무작위 맵 생성\n· 40종 이상의 아이템\n· 게임패드 지원', category:'게임', tags:['Godot','2D'], version:'1.2.0', updated:'2026-11-20', featured:true, downloads:[{platform:'windows',url:'#',size:48200000},{platform:'android',url:'#',size:39100000}] },
+  { id:'d2', title:'회의록 요약기', tagline:'녹음 파일을 넣으면 요약이 나옵니다', description:'회의 녹음을 텍스트로 바꾸고 핵심만 정리해 주는 데스크톱 도구.', category:'업무 도구', tags:['Python'], version:'0.9.1', updated:'2026-11-12', downloads:[{platform:'windows',url:'#',size:22500000}] },
+  { id:'d3', title:'점심 룰렛', tagline:'오늘 뭐 먹지? 고민 끝', description:'주변 식당 목록에서 오늘의 점심을 뽑아 주는 앱.', category:'생활', tags:['Flutter'], version:'2.0.3', updated:'2026-10-30', downloads:[{platform:'android',url:'#',size:14800000}] },
+  { id:'d4', title:'스프라이트 패커', tagline:'이미지 여러 장을 아틀라스 한 장으로', description:'드래그 앤 드롭으로 스프라이트 시트를 만드는 도구.', category:'업무 도구', tags:['C#'], version:'1.0.0', updated:'2026-10-11', downloads:[{platform:'windows',url:'#',size:8900000}] },
+  { id:'d5', title:'주식 타이쿤', tagline:'가상의 시장에서 투자 감각 키우기', description:'가상 종목으로 즐기는 경제 시뮬레이션 게임.', category:'게임', tags:['Unity'], version:'0.5.0', updated:'2026-09-25', downloads:[{platform:'windows',url:'#',size:61000000},{platform:'android',url:'#',size:52000000}] },
+  { id:'d6', title:'스탠드업 타이머', tagline:'데일리 미팅을 15분 안에', description:'발언자별 시간을 재 주는 간단한 타이머.', category:'생활', tags:['Kotlin'], version:'1.1.0', updated:'2026-09-02', downloads:[{platform:'android',url:'#',size:6200000}] },
+]};
+
+/* ───────── 상태 ───────── */
+let data = { site: {}, projects: [] };
+let isDemo = false;
+let admin = null;               // { token, owner, repo, branch }
+const view = { q: '', plat: 'all' };
+const $ = id => document.getElementById(id);
+
+/* ───────── 유틸 ───────── */
+function h(tag, props, ...kids) {
+  const e = document.createElement(tag);
+  for (const [k, v] of Object.entries(props || {})) {
+    if (v == null || v === false) continue;
+    if (k === 'class') e.className = v;
+    else if (k === 'style') e.style.cssText = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v === true ? '' : v);
+  }
+  for (const c of kids.flat(3)) { if (c == null || c === false) continue; e.append(c.nodeType ? c : document.createTextNode(c)); }
+  return e;
+}
+const hue = s => { let n = 0; for (const c of String(s)) n = (n * 31 + c.codePointAt(0)) % 360; return n; };
+const fmtSize = b => !b ? '' : b >= 1048576 ? (b / 1048576).toFixed(1) + 'MB' : Math.ceil(b / 1024) + 'KB';
+const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const byRecent = (a, b) => String(b.updated || '').localeCompare(String(a.updated || ''));
+const store = {
+  get(k) { try { return sessionStorage.getItem(k) || localStorage.getItem(k); } catch { return null; } },
+  set(k, v, keep) { try { sessionStorage.setItem(k, v); if (keep) localStorage.setItem(k, v); } catch {} },
+  del(k) { try { sessionStorage.removeItem(k); localStorage.removeItem(k); } catch {} },
+};
+function note(msg, ms = 3500) {
+  document.querySelectorAll('.note').forEach(n => n.remove());
+  const n = h('div', { class: 'note', role: 'status' }, msg); document.body.append(n);
+  setTimeout(() => n.remove(), ms);
+}
+function busy(msg) {
+  let b = document.querySelector('.busy');
+  if (msg == null) { b && b.remove(); return; }
+  if (!b) { b = h('div', { class: 'busy' }, h('div', { class: 'spin' }), h('div', { id: 'busyMsg' })); document.body.append(b); }
+  b.lastChild.textContent = msg;
+}
+function art(p, src, cls) {
+  const box = h('div', { class: 'art ' + (cls || ''), style: `--hue:${hue(p.title)}` }, h('span', { class: 'art-title' }, p.title));
+  if (src) {
+    const img = h('img', { src, alt: '', loading: 'lazy' });
+    img.onload = () => box.classList.add('has-img');
+    img.onerror = () => img.remove();
+    box.append(img);
+  }
+  return box;
+}
+function downloadButtons(p, cls) {
+  return (p.downloads || []).map(d => {
+    const pf = PLATFORMS[d.platform] || { label: d.platform, ext: '' };
+    return h('a', { class: 'btn ' + cls, href: d.url, download: true, onclick: e => { if (d.url === '#') { e.preventDefault(); note('샘플 데이터라 실제 파일은 없습니다.'); } } },
+      `⬇ ${pf.label} 설치`, h('small', null, [pf.ext, fmtSize(d.size)].filter(Boolean).join(' · ')));
+  });
+}
+
+/* ───────── 화면 그리기 ───────── */
+function render() {
+  const title = (data.site && data.site.title) || 'ALT9 Game Showcase';
+  $('logo').textContent = title; document.title = title;
+  $('foot').textContent = (data.site && data.site.footer) || `© ${new Date().getFullYear()} ${title}`;
+  $('demoFlag')?.remove();
+  if (isDemo) document.body.append(h('div', { class: 'demo-flag', id: 'demoFlag' }, '미리보기: 샘플 데이터 표시 중'));
+
+  // 필터 칩
+  $('chips').replaceChildren(...[['all', '전체'], ...Object.entries(PLATFORMS).map(([k, v]) => [k, v.label])].map(([k, label]) =>
+    h('button', { class: 'chip' + (view.plat === k ? ' on' : ''), type: 'button', onclick: () => { view.plat = k; render(); } }, label)));
+
+  // 관리자 도구
+  $('adminTools').replaceChildren(...(admin ? [
+    h('button', { class: 'btn accent sm', type: 'button', onclick: () => openEditor() }, '+ 새 프로젝트'),
+  ] : []));
+  $('adminBtn').textContent = admin ? '관리자 로그아웃' : '관리자';
+
+  const all = [...(data.projects || [])].sort(byRecent);
+  const q = view.q.trim().toLowerCase();
+  const filtering = q || view.plat !== 'all';
+  const list = all.filter(p =>
+    (view.plat === 'all' || (p.downloads || []).some(d => d.platform === view.plat)) &&
+    (!q || [p.title, p.tagline, p.category, ...(p.tags || [])].join(' ').toLowerCase().includes(q)));
+
+  const hero = $('hero'), main = $('main');
+  main.className = '';
+  if (!all.length) {
+    hero.replaceChildren(); main.className = 'flat';
+    main.replaceChildren(h('div', { class: 'empty' }, h('h2', null, '아직 등록된 프로젝트가 없습니다'),
+      h('p', null, admin ? '오른쪽 위 "+ 새 프로젝트"로 첫 프로젝트를 올려 보세요.' : '곧 프로젝트가 올라올 예정입니다.')));
+    return;
+  }
+  if (filtering) {
+    hero.replaceChildren(); main.className = 'flat';
+    main.replaceChildren(h('section', { class: 'row' },
+      h('h2', null, `검색 결과 ${list.length}개`),
+      list.length ? h('div', { class: 'grid' }, list.map(card)) : h('div', { class: 'empty' }, '조건에 맞는 프로젝트가 없습니다.')));
+    return;
+  }
+
+  // 히어로
+  const top = all.find(p => p.featured) || all[0];
+  hero.replaceChildren(h('section', { class: 'hero' },
+    art(top, top.banner || top.thumb),
+    h('div', { class: 'hero-body' },
+      h('div', { class: 'hero-kicker' }, (top.category || 'FEATURED').toUpperCase()),
+      h('h1', null, top.title),
+      top.tagline && h('p', null, top.tagline),
+      h('div', { class: 'actions' }, downloadButtons(top, 'primary').slice(0, 2),
+        h('button', { class: 'btn', type: 'button', onclick: () => openDetail(top) }, 'ⓘ 상세 정보')))));
+
+  // 행
+  const cats = [...new Set(all.map(p => p.category || '기타'))];
+  const rows = [['최근 업데이트', all.slice(0, 12)], ...cats.map(c => [c, all.filter(p => (p.category || '기타') === c)])];
+  main.replaceChildren(...rows.map(([name, items]) => {
+    const track = h('div', { class: 'track' }, items.map(card));
+    const go = dir => track.scrollBy({ left: dir * track.clientWidth * 0.85, behavior: 'smooth' });
+    return h('section', { class: 'row' }, h('h2', null, name),
+      h('button', { class: 'arrow l', type: 'button', 'aria-label': '이전', onclick: () => go(-1) }, '‹'),
+      track,
+      h('button', { class: 'arrow r', type: 'button', 'aria-label': '다음', onclick: () => go(1) }, '›'));
+  }));
+}
+function card(p) {
+  return h('button', { class: 'card', type: 'button', onclick: () => openDetail(p) },
+    art(p, p.thumb),
+    h('div', { class: 'card-info' }, h('b', null, p.title),
+      h('div', { class: 'badges' },
+        (p.downloads || []).map(d => h('span', { class: 'badge' }, (PLATFORMS[d.platform] || {}).label || d.platform)),
+        p.version && h('span', { class: 'badge' }, 'v' + p.version))));
+}
+
+/* ───────── 모달 ───────── */
+function openModal(content) {
+  const veil = h('div', { class: 'veil', onclick: e => { if (e.target === veil) closeModal(); } },
+    h('div', { class: 'modal', role: 'dialog', 'aria-modal': 'true' },
+      h('button', { class: 'x', type: 'button', 'aria-label': '닫기', onclick: closeModal }, '✕'), content));
+  $('layer').replaceChildren(veil); document.body.style.overflow = 'hidden';
+}
+function closeModal() { $('layer').replaceChildren(); document.body.style.overflow = ''; }
+addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+function openDetail(p) {
+  openModal([
+    art(p, p.banner || p.thumb, 'banner'),
+    h('div', { class: 'm-body' },
+      h('h2', null, p.title),
+      h('div', { class: 'meta' },
+        p.version && h('span', { class: 'v' }, 'v' + p.version),
+        p.updated && h('span', null, '업데이트 ' + p.updated),
+        p.category && h('span', null, p.category)),
+      h('div', { class: 'actions' }, downloadButtons(p, 'primary'),
+        !(p.downloads || []).length && h('span', { class: 'tags' }, '설치 파일이 아직 등록되지 않았습니다.')),
+      p.tagline && h('p', { style: 'font-size:17px;margin:22px 0 0;font-weight:600' }, p.tagline),
+      p.description && h('div', { class: 'desc' }, p.description),
+      (p.screenshots || []).length ? h('div', { class: 'shots' }, p.screenshots.map(s => h('img', { src: s, alt: p.title + ' 스크린샷', loading: 'lazy', onclick: () => open(s, '_blank') }))) : null,
+      (p.tags || []).length ? h('p', { class: 'tags' }, '태그: ' + p.tags.join(', ')) : null,
+      admin && h('div', { class: 'admin-bar' },
+        h('button', { class: 'btn sm', type: 'button', onclick: () => openEditor(p) }, '수정'),
+        h('button', { class: 'btn sm ghost', type: 'button', onclick: () => removeProject(p) }, '삭제'))),
+  ]);
+}
+
+function openApply() {
+  openModal(h('div', { class: 'form' },
+    h('h2', null, '프로젝트 등록 신청'),
+    h('p', { class: 'hint' }, '이곳에 프로젝트를 올리고 싶으시면 아래 담당자에게 문의해 주세요.'),
+    h('div', { class: 'contact' },
+      h('div', null, h('b', null, CONTACT.name), ' · ' + CONTACT.team),
+      h('div', null, h('a', { href: 'mailto:' + CONTACT.email + '?subject=' + encodeURIComponent('[ALT9 Game Showcase] 프로젝트 등록 신청') }, CONTACT.email))),
+    h('div', { class: 'form-foot' },
+      h('button', { class: 'btn ghost', type: 'button', onclick: async () => { try { await navigator.clipboard.writeText(CONTACT.email); note('메일 주소를 복사했습니다.'); } catch { note(CONTACT.email); } } }, '메일 주소 복사'),
+      h('a', { class: 'btn accent', href: 'mailto:' + CONTACT.email + '?subject=' + encodeURIComponent('[ALT9 Game Showcase] 프로젝트 등록 신청') }, '메일 보내기'))));
+}
+$('applyBtn').onclick = openApply;
+
+/* ───────── GitHub API (관리자 전용) ───────── */
+function detectRepo() {
+  if (CONFIG.owner && CONFIG.repo) return { owner: CONFIG.owner, repo: CONFIG.repo };
+  const m = location.hostname.match(/^([^.]+)\.github\.io$/);
+  if (!m) return { owner: '', repo: '' };
+  const seg = location.pathname.split('/').filter(Boolean)[0];
+  return { owner: m[1], repo: seg && !seg.includes('.') ? seg : m[1] + '.github.io' };
+}
+const encPath = p => p.split('/').map(encodeURIComponent).join('/');
+async function gh(path, opt = {}, a = admin) {
+  return fetch(`https://api.github.com/repos/${a.owner}/${a.repo}${path}`, {
+    ...opt, headers: { Authorization: 'Bearer ' + a.token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
+  });
+}
+async function ghFail(r, what) {
+  const m = (await r.json().catch(() => ({}))).message || '';
+  return new Error(`${what} 실패 (${r.status}) ${m}`);
+}
+const b64ToText = b => new TextDecoder().decode(Uint8Array.from(atob(b.replace(/\s/g, '')), c => c.charCodeAt(0)));
+function textToB64(t) { const u = new TextEncoder().encode(t); let s = ''; for (let i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }
+const fileToB64 = f => new Promise((ok, no) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(',')[1]); r.onerror = () => no(new Error('파일을 읽지 못했습니다.')); r.readAsDataURL(f); });
+async function imageToB64(f, maxW = 1600) {   // 이미지는 용량을 줄여 JPEG로 올림
+  try {
+    const bmp = await createImageBitmap(f); const k = Math.min(1, maxW / bmp.width);
+    const c = h('canvas'); c.width = Math.round(bmp.width * k); c.height = Math.round(bmp.height * k);
+    c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+    return c.toDataURL('image/jpeg', 0.86).split(',')[1];
+  } catch { return fileToB64(f); }
+}
+async function listDir(dir) {
+  const r = await gh(`/contents/${encPath(dir)}?ref=${encodeURIComponent(admin.branch)}`);
+  if (r.status === 404) return [];
+  if (!r.ok) throw await ghFail(r, '목록 조회');
+  const j = await r.json(); return Array.isArray(j) ? j : [];
+}
+async function putFile(path, b64, message) {
+  const i = path.lastIndexOf('/'), dir = path.slice(0, i), name = path.slice(i + 1);
+  const sha = (await listDir(dir)).find(f => f.name === name)?.sha;
+  const r = await gh('/contents/' + encPath(path), { method: 'PUT', body: JSON.stringify({ message, content: b64, branch: admin.branch, sha }) });
+  if (!r.ok) throw await ghFail(r, `${name} 업로드`);
+  return path;
+}
+async function getJson() {
+  const r = await gh(`/contents/projects.json?ref=${encodeURIComponent(admin.branch)}`);
+  if (r.status === 404) return { json: { site: data.site || {}, projects: [] }, sha: undefined };
+  if (!r.ok) throw await ghFail(r, '프로젝트 목록 조회');
+  const j = await r.json(); const json = JSON.parse(b64ToText(j.content));
+  json.projects = json.projects || []; json.site = json.site || {};
+  return { json, sha: j.sha };
+}
+async function putJson(json, sha, message) {
+  const r = await gh('/contents/projects.json', { method: 'PUT', body: JSON.stringify({ message, content: textToB64(JSON.stringify(json, null, 2) + '\n'), branch: admin.branch, sha }) });
+  if (!r.ok) throw await ghFail(r, '프로젝트 목록 저장');
+}
+
+/* ───────── 관리자: 로그인 ───────── */
+async function signIn(a, keep) {
+  const r = await gh('', {}, a);
+  if (r.status === 401) throw new Error('토큰이 올바르지 않거나 만료되었습니다.');
+  if (r.status === 404) throw new Error('저장소를 찾을 수 없습니다. 계정/저장소 이름과 토큰 권한을 확인해 주세요.');
+  if (!r.ok) throw await ghFail(r, '로그인');
+  const info = await r.json();
+  if (info.permissions && !info.permissions.push) throw new Error('이 저장소에 쓰기 권한이 없는 계정입니다.');
+  admin = { ...a, branch: CONFIG.branch || a.branch || info.default_branch };
+  store.set('showcase-admin', JSON.stringify(admin), keep);
+  try { data = (await getJson()).json; isDemo = false; } catch (e) { console.warn(e); }
+}
+function openLogin() {
+  const d = detectRepo();
+  const f = h('form', { class: 'form' });
+  f.innerHTML = `
+    <h2>관리자 로그인</h2>
+    <p class="hint">이 저장소에 쓰기 권한이 있는 GitHub 토큰으로만 업로드할 수 있습니다.<br>
+    GitHub → Settings → Developer settings → Fine-grained tokens에서 이 저장소만 선택하고 <b>Contents: Read and write</b> 권한으로 발급하세요.</p>
+    <div class="two">
+      <div><label for="lo">GitHub 계정(또는 조직)</label><input id="lo" name="owner" type="text" required></div>
+      <div><label for="lr">저장소 이름</label><input id="lr" name="repo" type="text" required></div>
+    </div>
+    <label for="lt">액세스 토큰</label><input id="lt" name="token" type="password" required autocomplete="off" placeholder="github_pat_...">
+    <label class="check"><input type="checkbox" name="keep"> 이 브라우저에 로그인 유지 (개인 PC에서만)</label>
+    <div class="err" role="alert"></div>
+    <div class="form-foot"><button class="btn accent" type="submit">로그인</button></div>`;
+  f.elements.owner.value = d.owner; f.elements.repo.value = d.repo;
+  f.onsubmit = async e => {
+    e.preventDefault(); f.querySelector('.err').textContent = ''; busy('확인 중…');
+    try {
+      await signIn({ token: f.elements.token.value.trim(), owner: f.elements.owner.value.trim(), repo: f.elements.repo.value.trim() }, f.elements.keep.checked);
+      closeModal(); render(); note('관리자 모드입니다. 오른쪽 위에서 프로젝트를 추가하세요.');
+    } catch (err) { admin = null; f.querySelector('.err').textContent = err.message; }
+    busy(null);
+  };
+  openModal(f);
+}
+$('adminBtn').onclick = () => {
+  if (!admin) return openLogin();
+  admin = null; store.del('showcase-admin'); render(); note('로그아웃했습니다.');
+};
+
+/* ───────── 관리자: 등록 / 수정 / 삭제 ───────── */
+function openEditor(p) {
+  const cats = [...new Set((data.projects || []).map(x => x.category).filter(Boolean))];
+  const f = h('form', { class: 'form' });
+  f.innerHTML = `
+    <h2>${p ? '프로젝트 수정' : '새 프로젝트'}</h2>
+    <label for="et">제목 *</label><input id="et" name="title" type="text" required maxlength="60">
+    <label for="eg">한 줄 소개</label><input id="eg" name="tagline" type="text" maxlength="120">
+    <label for="ed">설명</label><textarea id="ed" name="description"></textarea>
+    <div class="two">
+      <div><label for="ec">카테고리</label><input id="ec" name="category" type="text" list="catList" placeholder="예: 게임, 업무 도구"><datalist id="catList"></datalist></div>
+      <div><label for="ev">버전</label><input id="ev" name="version" type="text" placeholder="1.0.0"></div>
+    </div>
+    <label for="ea">태그 (쉼표로 구분)</label><input id="ea" name="tags" type="text">
+    <label class="check"><input type="checkbox" name="featured"> 메인 상단(대표 프로젝트)에 노출</label>
+    <fieldset class="box"><legend>이미지</legend>
+      <label for="ei">썸네일 / 배너 (가로 16:9 권장)</label><input id="ei" name="thumb" type="file" accept="image/*">
+      <label for="es">스크린샷 (여러 장 선택 가능)</label><input id="es" name="shots" type="file" accept="image/*" multiple>
+      <label class="check" id="clearWrap" hidden><input type="checkbox" name="clearShots"> 기존 스크린샷 지우기</label>
+    </fieldset>
+    ${Object.entries(PLATFORMS).map(([k, v]) => `
+    <fieldset class="box"><legend>${v.label} 설치 파일 (${v.ext})</legend>
+      <label for="f_${k}">파일 올리기 (최대 ${MAX_UPLOAD_MB}MB)</label><input id="f_${k}" name="${k}File" type="file" accept="${v.accept}">
+      <label for="u_${k}">또는 다운로드 링크 (GitHub Releases 등, 큰 파일용)</label><input id="u_${k}" name="${k}Url" type="url" placeholder="https://github.com/.../releases/download/...">
+    </fieldset>`).join('')}
+    <div class="err" role="alert"></div>
+    <div class="form-foot"><button class="btn ghost" type="button" id="cancel">취소</button><button class="btn accent" type="submit">저장</button></div>`;
+  cats.forEach(c => f.querySelector('#catList').append(h('option', { value: c })));
+  if (p) {
+    for (const k of ['title', 'tagline', 'description', 'category', 'version']) f.elements[k].value = p[k] || '';
+    f.elements.tags.value = (p.tags || []).join(', '); f.elements.featured.checked = !!p.featured;
+    f.querySelector('#clearWrap').hidden = !(p.screenshots || []).length;
+    for (const d of p.downloads || []) if (f.elements[d.platform + 'Url']) f.elements[d.platform + 'Url'].value = d.url;
+  }
+  f.querySelector('#cancel').onclick = closeModal;
+  f.onsubmit = async e => {
+    e.preventDefault(); const err = f.querySelector('.err'); err.textContent = '';
+    try { await saveProject(f, p); closeModal(); render(); note('저장했습니다. 방문자 화면에는 1~2분 뒤 반영됩니다.', 5000); }
+    catch (ex) { err.textContent = ex.message; err.scrollIntoView({ block: 'center' }); }
+    busy(null);
+  };
+  openModal(f);
+}
+async function saveProject(f, orig) {
+  for (const k of Object.keys(PLATFORMS)) {
+    const file = f.elements[k + 'File'].files[0];
+    if (file && file.size > MAX_UPLOAD_MB * 1048576)
+      throw new Error(`${PLATFORMS[k].label} 파일이 ${MAX_UPLOAD_MB}MB를 넘습니다. GitHub Releases에 올린 뒤 다운로드 링크를 입력해 주세요.`);
+  }
+  const p = orig ? JSON.parse(JSON.stringify(orig)) : { id: 'p' + Date.now().toString(36) };
+  const stamp = Date.now().toString(36), dir = `files/${p.id}`;
+  Object.assign(p, {
+    title: f.elements.title.value.trim(), tagline: f.elements.tagline.value.trim(), description: f.elements.description.value.trim(),
+    category: f.elements.category.value.trim() || '기타', version: f.elements.version.value.trim().replace(/^v/i, ''),
+    tags: f.elements.tags.value.split(',').map(s => s.trim()).filter(Boolean), featured: f.elements.featured.checked, updated: today(),
+  });
+  if (f.elements.thumb.files[0]) {
+    busy('썸네일 올리는 중…');
+    p.thumb = await putFile(`${dir}/thumb-${stamp}.jpg`, await imageToB64(f.elements.thumb.files[0]), `[showcase] ${p.title} 썸네일`);
+  }
+  p.screenshots = f.elements.clearShots.checked ? [] : (p.screenshots || []);
+  let i = 0;
+  for (const s of f.elements.shots.files) {
+    busy(`스크린샷 올리는 중… (${++i}/${f.elements.shots.files.length})`);
+    p.screenshots.push(await putFile(`${dir}/shot-${stamp}-${i}.jpg`, await imageToB64(s), `[showcase] ${p.title} 스크린샷`));
+  }
+  const old = p.downloads || []; p.downloads = [];
+  for (const k of Object.keys(PLATFORMS)) {
+    const file = f.elements[k + 'File'].files[0], url = f.elements[k + 'Url'].value.trim();
+    if (file) {
+      busy(`${PLATFORMS[k].label} 설치 파일 올리는 중… (${fmtSize(file.size)}, 시간이 걸릴 수 있습니다)`);
+      const safe = file.name.replace(/[^A-Za-z0-9._-]+/g, '_');
+      p.downloads.push({ platform: k, url: await putFile(`${dir}/${safe}`, await fileToB64(file), `[showcase] ${p.title} ${PLATFORMS[k].ext} v${p.version || ''}`), size: file.size, name: file.name });
+    } else if (url) {
+      const prev = old.find(d => d.platform === k && d.url === url);
+      p.downloads.push(prev || { platform: k, url });
+    }
+  }
+  busy('프로젝트 목록 저장 중…');
+  const { json, sha } = await getJson();
+  const at = json.projects.findIndex(x => x.id === p.id);
+  if (at >= 0) json.projects[at] = p; else json.projects.unshift(p);
+  await putJson(json, sha, `[showcase] ${orig ? '수정' : '등록'}: ${p.title}`);
+  data = json; isDemo = false;
+}
+async function removeProject(p) {
+  if (!confirm(`"${p.title}" 프로젝트를 삭제할까요?\n올린 설치 파일과 이미지도 함께 지워집니다.`)) return;
+  try {
+    busy('삭제 중…');
+    const { json, sha } = await getJson();
+    json.projects = json.projects.filter(x => x.id !== p.id);
+    await putJson(json, sha, `[showcase] 삭제: ${p.title}`);
+    data = json;
+    for (const file of await listDir(`files/${p.id}`)) {
+      busy(`파일 지우는 중… (${file.name})`);
+      await gh('/contents/' + encPath(file.path), { method: 'DELETE', body: JSON.stringify({ message: `[showcase] 삭제: ${p.title}`, sha: file.sha, branch: admin.branch }) });
+    }
+    closeModal(); render(); note('삭제했습니다.');
+  } catch (e) { note(e.message, 6000); }
+  busy(null);
+}
+
+/* ───────── 시작 ───────── */
+$('search').addEventListener('input', e => { view.q = e.target.value; render(); });
+addEventListener('scroll', () => $('header').classList.toggle('solid', scrollY > 40), { passive: true });
+(async () => {
+  try {
+    const r = await fetch('projects.json?t=' + Date.now(), { cache: 'no-store' });
+    if (!r.ok) throw 0;
+    data = await r.json(); data.projects = data.projects || [];
+  } catch { data = DEMO; isDemo = true; }
+  render();
+  const saved = store.get('showcase-admin');
+  if (saved) { try { const a = JSON.parse(saved); await signIn(a, false); render(); } catch { admin = null; store.del('showcase-admin'); render(); } }
+})();
+</script>
+</body>
+</html>
