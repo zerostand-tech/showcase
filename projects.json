@@ -3,5 +3,29 @@
     "title": "ALT9 Game Showcase",
     "footer": ""
   },
-  "projects": []
+  "projects": [
+    {
+      "id": "pmww0r073",
+      "title": "ShoesForGod",
+      "tagline": "신발 강화하여 판매하는 게임입니다.",
+      "description": "재밌어요!",
+      "category": "게임",
+      "version": "1.0.0",
+      "tags": [],
+      "featured": true,
+      "updated": "2026-11-25",
+      "thumb": "files/pmww0r073/thumb-mww0r073.jpg",
+      "screenshots": [
+        "files/pmww0r073/shot-mww0r073-1.jpg"
+      ],
+      "downloads": [
+        {
+          "platform": "web",
+          "url": "files/pmww0r073/web/ShoesForGod.html",
+          "size": 10548409,
+          "name": "ShoesForGod.html"
+        }
+      ]
+    }
+  ]
 }
