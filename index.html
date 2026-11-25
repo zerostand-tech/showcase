@@ -88,6 +88,11 @@ main.flat{margin-top:0;padding-top:90px}
 .desc{white-space:pre-wrap;line-height:1.7;color:#dedee6;margin:20px 0}
 .shots{display:flex;gap:10px;overflow-x:auto;padding-bottom:8px}
 .shots img{height:200px;border-radius:6px;cursor:zoom-in}
+.viewer{position:fixed;inset:0;z-index:70;background:#000e;display:flex;align-items:center;justify-content:center;touch-action:pan-y}
+.viewer img{max-width:92vw;max-height:88vh;border-radius:6px;box-shadow:0 10px 50px #000;user-select:none}
+.v-nav{position:absolute;top:50%;transform:translateY(-50%);width:54px;height:84px;border:0;border-radius:8px;background:#0009;color:#fff;font-size:40px;cursor:pointer}
+.v-nav:hover{background:#333c}.v-nav.l{left:2vw}.v-nav.r{right:2vw}
+.v-count{position:absolute;bottom:18px;left:50%;transform:translateX(-50%);color:#ddd;font-size:14px;background:#0009;padding:4px 12px;border-radius:99px}
 .tags{color:var(--mute);font-size:13px}
 .admin-bar{display:flex;gap:8px;margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
 
@@ -304,8 +309,31 @@ function openModal(content) {
       h('button', { class: 'x', type: 'button', 'aria-label': '닫기', onclick: closeModal }, '✕'), content));
   $('layer').replaceChildren(veil); document.body.style.overflow = 'hidden';
 }
-function closeModal() { $('layer').replaceChildren(); document.body.style.overflow = ''; }
-addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+function closeModal() { document.querySelector('.viewer')?.remove(); $('layer').replaceChildren(); document.body.style.overflow = ''; }
+addEventListener('keydown', e => {
+  const v = document.querySelector('.viewer');
+  if (v) { if (e.key === 'Escape') v.remove(); else if (e.key === 'ArrowLeft') v.go(-1); else if (e.key === 'ArrowRight') v.go(1); return; }
+  if (e.key === 'Escape') closeModal();
+});
+
+/* 스크린샷 크게 보기 */
+function openViewer(list, start) {
+  let i = start, x0 = null;
+  const img = h('img', { alt: '' }), count = h('div', { class: 'v-count' });
+  const show = () => { img.src = list[i]; img.alt = `스크린샷 ${i + 1}`; count.textContent = `${i + 1} / ${list.length}`; };
+  const many = list.length > 1;
+  const v = h('div', { class: 'viewer', role: 'dialog', 'aria-modal': 'true', 'aria-label': '스크린샷 보기',
+      onclick: e => { if (e.target === v) v.remove(); },
+      ontouchstart: e => { x0 = e.touches[0].clientX; },
+      ontouchend: e => { if (x0 == null) return; const dx = e.changedTouches[0].clientX - x0; x0 = null; if (Math.abs(dx) > 50) v.go(dx < 0 ? 1 : -1); } },
+    h('button', { class: 'x', type: 'button', 'aria-label': '닫기', onclick: () => v.remove() }, '✕'),
+    many && h('button', { class: 'v-nav l', type: 'button', 'aria-label': '이전 스크린샷', onclick: () => v.go(-1) }, '‹'),
+    img,
+    many && h('button', { class: 'v-nav r', type: 'button', 'aria-label': '다음 스크린샷', onclick: () => v.go(1) }, '›'),
+    many && count);
+  v.go = d => { i = (i + d + list.length) % list.length; show(); };
+  show(); document.body.append(v);
+}
 
 function openDetail(p) {
   openModal([
@@ -321,7 +349,7 @@ function openDetail(p) {
         !(p.downloads || []).length && h('span', { class: 'tags' }, '설치 파일이 아직 등록되지 않았습니다.')),
       p.tagline && h('p', { style: 'font-size:17px;margin:22px 0 0;font-weight:600' }, p.tagline),
       p.description && h('div', { class: 'desc' }, p.description),
-      (p.screenshots || []).length ? h('div', { class: 'shots' }, p.screenshots.map(s => h('img', { src: s, alt: p.title + ' 스크린샷', loading: 'lazy', onclick: () => open(s, '_blank') }))) : null,
+      (p.screenshots || []).length ? h('div', { class: 'shots' }, p.screenshots.map((s, i) => h('img', { src: s, alt: p.title + ' 스크린샷 ' + (i + 1), loading: 'lazy', onclick: () => openViewer(p.screenshots, i) }))) : null,
       (p.tags || []).length ? h('p', { class: 'tags' }, '태그: ' + p.tags.join(', ')) : null,
       admin && h('div', { class: 'admin-bar' },
         h('button', { class: 'btn sm', type: 'button', onclick: () => openEditor(p) }, '수정'),
