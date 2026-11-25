@@ -5,6 +5,26 @@
   },
   "projects": [
     {
+      "id": "pmww0ueqf",
+      "title": "123",
+      "tagline": "",
+      "description": "123",
+      "category": "기타",
+      "version": "",
+      "tags": [],
+      "featured": false,
+      "updated": "2026-11-25",
+      "screenshots": [],
+      "downloads": [
+        {
+          "platform": "web",
+          "url": "files/pmww0ueqf/web/ShoesForGod.html",
+          "size": 10548409,
+          "name": "ShoesForGod.html"
+        }
+      ]
+    },
+    {
       "id": "pmww0r073",
       "title": "ShoesForGod",
       "tagline": "신발 강화하여 판매하는 게임입니다.",
