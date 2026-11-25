@@ -13,10 +13,17 @@
       "category": "게임",
       "version": "1.0.0",
       "tags": [],
-      "featured": true,
+      "featured": false,
       "updated": "2026-11-25",
-      "thumb": "files/pmww10ahj/thumb-mww10ahj.jpg",
-      "screenshots": [],
+      "thumb": "files/pmww10ahj/thumb-mww14jdi.jpg",
+      "screenshots": [
+        "files/pmww10ahj/shot-mww14jdi-1.jpg",
+        "files/pmww10ahj/shot-mww14jdi-2.jpg",
+        "files/pmww10ahj/shot-mww14jdi-3.jpg",
+        "files/pmww10ahj/shot-mww14jdi-4.jpg",
+        "files/pmww10ahj/shot-mww14jdi-5.jpg",
+        "files/pmww10ahj/shot-mww14jdi-6.jpg"
+      ],
       "downloads": [
         {
           "platform": "web",
