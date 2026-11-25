@@ -353,7 +353,8 @@ function detectRepo() {
 const encPath = p => p.split('/').map(encodeURIComponent).join('/');
 async function gh(path, opt = {}, a = admin) {
   return fetch(`https://api.github.com/repos/${a.owner}/${a.repo}${path}`, {
-    ...opt, headers: { Authorization: 'Bearer ' + a.token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
+    ...opt, cache: 'no-store',   // 브라우저 캐시 때문에 예전 상태를 읽어 저장이 충돌하는 것을 방지
+    headers: { Authorization: 'Bearer ' + a.token, Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' },
   });
 }
 async function ghFail(r, what) {
