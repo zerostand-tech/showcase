@@ -36,9 +36,10 @@
       "tags": [],
       "featured": true,
       "updated": "2026-11-25",
-      "thumb": "files/pmww0r073/thumb-mww0r073.jpg",
+      "thumb": "files/pmww0r073/thumb-mww1102q.jpg",
       "screenshots": [
-        "files/pmww0r073/shot-mww0r073-1.jpg"
+        "files/pmww0r073/shot-mww0r073-1.jpg",
+        "files/pmww0r073/shot-mww1102q-1.jpg"
       ],
       "downloads": [
         {
@@ -47,7 +48,8 @@
           "size": 10548409,
           "name": "ShoesForGod.html"
         }
-      ]
+      ],
+      "author": ""
     }
   ]
 }
